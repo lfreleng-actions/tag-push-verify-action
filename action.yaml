@@ -20,12 +20,18 @@ inputs:
     default: true
 
 outputs:
+  tag_push:
+    description: 'Set true when action/workflow trigger was tag push'
+    value: "${{ steps.event.outputs.tag_push }}"
   valid:
     description: 'Set true when pushed tag conforms to versioning type'
     value: "${{ steps.results.outputs.valid }}"
   tag:
     description: 'Set to the pushed tag value: github.ref_name'
     value: "${{ steps.refs.outputs.tag }}"
+  dev_version:
+    description: 'Set true if tag is a development version'
+    value: "${{ steps.results.outputs.dev_version }}"
 
 runs:
   using: 'composite'
@@ -44,18 +50,25 @@ runs:
         echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
         echo 'valid=false' >> "$GITHUB_OUTPUT"
 
-    - name: 'Error when NOT triggered by pushed tag'
-      # yamllint disable-line rule:line-length
-      if: github.ref_type != 'tag' || ! startsWith(github.ref, 'refs/tags/')
+    - name: 'Report GitHub event/trigger'
+      id: 'event'
       shell: bash
       run: |
-        # Error when NOT triggered by pushed tag
-        if [ "f${{ inputs.exit_on_fail }}" = "ftrue" ]; then
-          echo 'Workflow/action trigger was NOT tag push event ❌'
-          exit 1
+        # Report GitHub event/trigger
+        if [ "${{ github.ref_type }}" = 'tag' ]; then
+          tag_push='true'
+          echo 'Workflow/action trigger was tag push event ✅'
         else
-          echo 'Workflow/action trigger was NOT tag push event ⚠️'
+          tag_push='false'
+          if [ "f${{ inputs.exit_on_fail }}" = "ftrue" ]; then
+            echo 'Workflow/action trigger was NOT tag push event ❌'
+            exit 1
+          else
+            echo 'Workflow/action trigger was NOT tag push event ⚠️'
+          fi
         fi
+        echo "tag_push=$tag_push" >> $GITHUB_ENV
+        echo "tag_push=$tag_push" >> $GITHUB_OUTPUT
 
     - name: "Validate action inputs"
       # yamllint disable-line rule:line-length
@@ -90,7 +103,6 @@ runs:
         exit_on_fail: "${{ inputs.exit_on_fail }}"
 
     - name: 'Set outputs and return results'
-      if: steps.semver.outcome == 'success' || steps.calver.outcome == 'success'
       id: results
       shell: bash
       run: |
@@ -114,3 +126,14 @@ runs:
             exit 1
           fi
         fi
+
+        # Flag when the tag/string indicates development version
+        dev_version=false
+        if [ "${{ steps.semver.outputs.dev_version }}" = 'true' ] \
+          || [ "${{ steps.calver.outputs.dev_version }}" = 'true' ]; then
+          echo "Development/pre-release detected 🛠️" \
+            >> "$GITHUB_STEP_SUMMARY"
+          dev_version=true
+        fi
+        echo "dev_version=$dev_version" >> $GITHUB_ENV
+        echo "dev_version=$dev_version" >> $GITHUB_OUTPUT

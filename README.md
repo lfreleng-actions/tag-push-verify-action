@@ -72,10 +72,12 @@ The "versioning" input string must match one of the options below:
 
 <!-- markdownlint-disable MD013 -->
 
-| Output Name | Description                                              |
-| ----------- | -------------------------------------------------------- |
-| valid       | Set based on the validation results: true/false/untested |
-| tag         | Set to the pushed tag value ${{ github.ref_name }}       |
+| Output Name | Description                                                |
+| ----------- | ---------------------------------------------------------- |
+| tag_push    | Set true when workflow/job trigger was a tag push event    |
+| valid       | Set based on the validation results: true/false/untested   |
+| tag         | Set to the pushed tag value ${{ github.ref_name }}         |
+| dev_version | Set true when tag contains pre-release/development strings |
 
 Note: also exports the pushed tag to the environment.
 
