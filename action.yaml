@@ -9,14 +9,12 @@ description: "Verifies action/workflow trigger was tag push of given type"
 inputs:
   versioning:
     description: 'Tag/string versioning type to check/validate'
-    type: 'string'
     required: false
     # Options: [semver|calver|none]
     default: 'semver'
   exit_on_fail:
     description: 'When set true will exit on failed validation'
     required: false
-    type: 'boolean'
     default: true
 
 outputs:
