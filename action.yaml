@@ -15,7 +15,7 @@ inputs:
   exit_on_fail:
     description: 'When set true will exit on failed validation'
     required: false
-    default: true
+    default: 'true'
 
 outputs:
   tag_push:
