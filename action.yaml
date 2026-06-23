@@ -40,45 +40,47 @@ runs:
       run: |
         # Report action/workflow environment
         echo 'GitHub Action/Workflow Event/Triggers 💬'
-        echo "GitHub ref: ${{ github.ref }}"
-        echo "GitHub ref type: ${{ github.ref_type }}"
+        echo "GitHub ref: $GITHUB_REF"
+        echo "GitHub ref type: $GITHUB_REF_TYPE"
         # For actions/workflows triggered by a tag push, this is the tag value
-        echo "GitHub ref name: ${{ github.ref_name }} 🏷️"
-        echo "tag=${{ github.ref_name }}" >> "$GITHUB_ENV"
-        echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+        echo "GitHub ref name: $GITHUB_REF_NAME 🏷️"
+        echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
         echo 'valid=false' >> "$GITHUB_OUTPUT"
 
     - name: 'Report GitHub event/trigger'
       id: 'event'
       shell: bash
+      env:
+        EXIT_ON_FAIL: ${{ inputs.exit_on_fail }}
       run: |
-        # Report GitHub event/trigger
-        if [ "${{ github.ref_type }}" = 'tag' ]; then
+        # Report GitHub event/trigger
+        if [ "$GITHUB_REF_TYPE" = 'tag' ]; then
           tag_push='true'
           echo 'Workflow/action trigger was tag push event ✅'
         else
           tag_push='false'
-          if [ "f${{ inputs.exit_on_fail }}" = "ftrue" ]; then
+          if [ "f$EXIT_ON_FAIL" = "ftrue" ]; then
             echo 'Workflow/action trigger was NOT tag push event ❌'
             exit 1
           else
             echo 'Workflow/action trigger was NOT tag push event ⚠️'
           fi
         fi
-        echo "tag_push=$tag_push" >> $GITHUB_ENV
-        echo "tag_push=$tag_push" >> $GITHUB_OUTPUT
+        echo "tag_push=$tag_push" >> "$GITHUB_OUTPUT"
 
     - name: "Validate action inputs"
       # yamllint disable-line rule:line-length
       shell: bash
+      env:
+        VERSIONING: ${{ inputs.versioning }}
       run: |
         # Validate action inputs
-        if [ "${{ inputs.versioning }}" = 'semver' ] || \
-          [ "${{ inputs.versioning }}" = 'calver' ] || \
-          [ "${{ inputs.versioning }}" = 'none' ]; then
+        if [ "$VERSIONING" = 'semver' ] || \
+          [ "$VERSIONING" = 'calver' ] || \
+          [ "$VERSIONING" = 'none' ]; then
           echo 'Action inputs validated 💬'
         else
-          echo "Error: invalid versioning input: ${{ inputs.versioning }} ❌"
+          echo "Error: invalid versioning input: $VERSIONING ❌"
           exit 1
         fi
 
@@ -103,35 +105,41 @@ runs:
     - name: 'Set outputs and return results'
       id: results
       shell: bash
+      env:
+        VERSIONING: ${{ inputs.versioning }}
+        EXIT_ON_FAIL: ${{ inputs.exit_on_fail }}
+        SEMVER_OUTCOME: ${{ steps.semver.outcome }}
+        CALVER_OUTCOME: ${{ steps.calver.outcome }}
+        SEMVER_DEV: ${{ steps.semver.outputs.dev_version }}
+        CALVER_DEV: ${{ steps.calver.outputs.dev_version }}
       run: |
         # Validation passed
-        if [ "${{ steps.semver.outcome }}" = 'success' ]; then
+        if [ "$SEMVER_OUTCOME" = 'success' ]; then
           echo 'Pushed tag conforms to Semantic Versioning ✅' \
             >> "$GITHUB_STEP_SUMMARY"
           echo 'valid=true' >> "$GITHUB_OUTPUT"
-        elif [ "${{ steps.calver.outcome }}" = 'success' ]; then
+        elif [ "$CALVER_OUTCOME" = 'success' ]; then
           echo 'Pushed tag conforms to Calendar Versioning ✅' \
             >> "$GITHUB_STEP_SUMMARY"
           echo 'valid=true' >> "$GITHUB_OUTPUT"
-        elif [ "${{ inputs.versioning }}" = 'none' ]; then
+        elif [ "$VERSIONING" = 'none' ]; then
           echo 'Tag validation not enabled for this action/workflow ⚠️' \
             >> "$GITHUB_STEP_SUMMARY"
           echo 'valid=untested' >> "$GITHUB_OUTPUT"
         else
-          echo "Tag/string failed ${{ inputs.versioning }} validation ❌"
+          echo "Tag/string failed $VERSIONING validation ❌"
           echo 'valid=false' >> "$GITHUB_OUTPUT"
-          if [ "f$exit_on_fail" = "ftrue" ]; then
+          if [ "f$EXIT_ON_FAIL" = "ftrue" ]; then
             exit 1
           fi
         fi
 
         # Flag when the tag/string indicates development version
         dev_version=false
-        if [ "${{ steps.semver.outputs.dev_version }}" = 'true' ] \
-          || [ "${{ steps.calver.outputs.dev_version }}" = 'true' ]; then
+        if [ "$SEMVER_DEV" = 'true' ] \
+          || [ "$CALVER_DEV" = 'true' ]; then
           echo "Development/pre-release detected 🛠️" \
             >> "$GITHUB_STEP_SUMMARY"
           dev_version=true
         fi
-        echo "dev_version=$dev_version" >> $GITHUB_ENV
-        echo "dev_version=$dev_version" >> $GITHUB_OUTPUT
+        echo "dev_version=$dev_version" >> "$GITHUB_OUTPUT"
