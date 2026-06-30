@@ -97,7 +97,7 @@ runs:
       if: inputs.versioning == 'calver'
       id: calver
       # yamllint disable-line rule:line-length
-      uses: lfreleng-actions/tag-validate-calver-action@7df739af1f55b00e04e739b774aa77ad340240d0 # v0.1.1
+      uses: lfreleng-actions/tag-validate-calver-action@67b782bb59d546ff92969b8401bc4ded3cbff890 # v0.1.2
       with:
         string: "${{ github.ref_name }}"
         exit_on_fail: "${{ inputs.exit_on_fail }}"
