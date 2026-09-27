@@ -33,14 +33,9 @@ jobs:
       contents: read
     timeout-minutes: 5
     steps:
-      - name: "Checkout repository"
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
       - name: "Running local action: ${{ github.repository }} [SemVer]"
         id: 'semver'
-        uses: ./
+        uses: $/
         with:
           versioning: 'semver'
         # This action relies on a tag push and is non-trivial to test here
@@ -49,7 +44,7 @@ jobs:
 
       - name: "Running local action: ${{ github.repository }} [CalVer]"
         id: 'calver'
-        uses: ./
+        uses: $/
         with:
           versioning: 'calver'
         # This action relies on a tag push and is non-trivial to test here
